@@ -26,7 +26,7 @@ class Environment:
   def get_state(self):
     positions = self.data.qpos
     velocities = self.data.qvel
-    
+                                   
     torso_height = self.data.xpos[1][2]
     torso_pitch = positions[1]
     torso_pitch_velocity = velocities[1]
