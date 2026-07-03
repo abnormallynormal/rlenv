@@ -20,8 +20,8 @@ class Environment:
     mujoco.mj_step(self.model, self.data)
     
     state = self.get_state()
-    is_done = self.is_done()
-    reward = -2 if is_done else self.calculate_reward()
+    is_done = self.is_done(state)
+    reward = -2 if is_done else self.calculate_reward(state)
     return (state, reward, is_done, {})
   def get_state(self):
     positions = self.data.qpos
@@ -39,13 +39,11 @@ class Environment:
     return np.concatenate([leg_joint_angles, leg_joint_velocities, [torso_pitch], [torso_pitch_velocity], [torso_height], [velocity]])
   
   
-  def is_done(self):
-    state = self.get_state()
+  def is_done(self, state):
     torso_height = state[14]
     return torso_height < 0.5
     
-  def calculate_reward(self):
-    state = self.get_state()
+  def calculate_reward(self, state):
     velocity = state[15]
     leg_joint_velocities = state[6:12]
     torso_pitch = state[12]
