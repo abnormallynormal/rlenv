@@ -56,31 +56,16 @@ class Environment:
     forward_velocity = state[15]
     torso_pitch = state[12]
 
-    # Velocity tracking: reward peaks at the target speed and falls off if the
-    # robot goes too SLOW or too FAST. The old min(v, target) cap let it rush
-    # (you measured ~1.7 m/s) and outrun its own balance; tracking pulls it to
-    # a controlled pace, which is steadier and looks more natural.
     target_speed = 1.0
     forward_reward = 1.5 * np.exp(-2.0 * (forward_velocity - target_speed) ** 2)
 
-    # Stay alive and roughly upright. Small on purpose: it must never
-    # outweigh forward progress, or standing still becomes optimal again.
     alive_bonus = 0.5
     upright_penalty = 1.0 * (torso_pitch ** 2)
 
-    # Light energy/control cost. This discourages flailing WITHOUT punishing
-    # the leg swing that walking is made of (which the old leg-velocity term
-    # did). self.data.ctrl holds the torques actually applied this step.
     control_cost = 0.001 * np.sum(self.data.ctrl ** 2)
 
-    # Smoothness: penalize sudden torque changes. This is what kills the
-    # "violent jerk" — a smooth gait reverses torques gradually, a jerk slams
-    # them, so (ctrl - prev_ctrl)^2 spikes on the jerk but stays small when
-    # walking. Dial this DOWN if the gait comes out too timid/stiff.
     smoothness_cost = 0.05 * np.sum((self.data.ctrl - self.prev_ctrl) ** 2)
 
-    # Signed contribution of each term, so a diagnostic can see which one the
-    # policy is actually banking (they must sum to the returned reward).
     self.reward_terms = {
       "forward": forward_reward,
       "alive": alive_bonus,
