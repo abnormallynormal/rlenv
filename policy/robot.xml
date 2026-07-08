@@ -8,13 +8,13 @@
   <worldbody>
     <light pos="0 0 1.3" dir="0 0 -1" diffuse="1 1 1" />
     <geom name="floor" type="plane" pos="0 0 0" size="40 40 40" rgba="0.8 0.9 0.8 1" />
-    <body name="torso" pos="0 0 1.25">
+    <body name="torso" pos="0 0 0.95">
       <joint name="torso_x" type="slide" axis="1 0 0" limited="false" />
       <joint name="torso_y" type="hinge" axis="0 1 0" limited="false" />
       <joint name="torso_z" type="slide" axis="0 0 1" limited="false" />
       <geom name="torso_geom" type="capsule" fromto="0 0 0.25 0 0 -0.25" size="0.05" />
       <body name="right_thigh" pos="0 -0.1 -0.2">
-        <joint name="right_hip" type="hinge" axis="0 1 0" range="-30 30" />
+        <joint name="right_hip" type="hinge" axis="0 1 0" range="-45 45" />
         <geom name="right_thigh_geom" type="capsule" fromto="0 0 0 0 0 -0.4" size="0.045"
           rgba="0.8 0.2 0.2 1" />
         <body name="right_shin" pos="0 0 -0.4">
@@ -29,7 +29,7 @@
         </body>
       </body>
       <body name="left_thigh" pos="0 0.1 -0.2">
-        <joint name="left_hip" type="hinge" axis="0 1 0" range="-30 30" />
+        <joint name="left_hip" type="hinge" axis="0 1 0" range="-45 45" />
         <geom name="left_thigh_geom" type="capsule" fromto="0 0 0 0 0 -0.4" size="0.045"
           rgba="0.2 0.8 0.2 1" />
         <body name="left_shin" pos="0 0 -0.4">
