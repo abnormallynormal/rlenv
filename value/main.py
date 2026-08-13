@@ -1,12 +1,12 @@
-from value.train import train_loop
-from value.agent.buffer import Buffer
-from value.modules.snake.environment import Environment as snake
-from value.modules.flappy.environment import Environment as flappy
-from value.modules.snake.telemetry import TelemetryRecorder as snake_recorder
-from value.modules.flappy.telemetry import TelemetryRecorder as flappy_recorder
-from value.modules.snake.renderer import Renderer as snake_renderer
-from value.modules.flappy.renderer import Renderer as flappy_renderer
-from value.agent.dqn import Agent as dqn
+from train import train_loop
+from agent.buffer import Buffer
+from modules.snake.environment import Environment as snake
+from modules.flappy.environment import Environment as flappy
+from modules.snake.telemetry import TelemetryRecorder as snake_recorder
+from modules.flappy.telemetry import TelemetryRecorder as flappy_recorder
+from modules.snake.renderer import Renderer as snake_renderer
+from modules.flappy.renderer import Renderer as flappy_renderer
+from agent.dqn import Agent as dqn
 from collections import deque
 import threading, time
 
@@ -23,9 +23,9 @@ def training(environment, agent, replay_buffer, telemetry, action_size):
 def main():
   VISUALIZE = True
   
-  state_size = 11
-  action_size = 3
-  environment = snake()
+  state_size = 4
+  action_size = 2
+  environment = flappy()
   agent = dqn(state_size, action_size)
   replay_buffer = Buffer(alpha=0.6, beta=0.4, beta_increment=0.001, epsilon=1e-5)
 
@@ -33,9 +33,9 @@ def main():
     renderer_ready = {"ready": True}
     mutex = threading.Lock()
     
-    renderer = snake_renderer(17, 20)
+    renderer = flappy_renderer(400, 600)
     playback_queue = deque()
-    telemetry = snake_recorder(playback_queue, renderer_ready, mutex)
+    telemetry = flappy_recorder(playback_queue, renderer_ready, mutex)
     
     training_thread = threading.Thread(target=training, args=(environment, agent, replay_buffer, telemetry, action_size), daemon=True)
     training_thread.start()

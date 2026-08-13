@@ -1,5 +1,5 @@
 from collections import deque
-from value.agent.sumtree import SumTree
+from agent.sumtree import SumTree
 import random
 
 class Buffer:

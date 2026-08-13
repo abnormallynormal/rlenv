@@ -2,7 +2,7 @@ import random
 import torch
 from torch import nn
 from torch import optim
-from value.agent.network import Network
+from agent.network import Network
 
 class Agent:
   def __init__(self, state_size, action_size):
