@@ -1,11 +1,10 @@
-import threading
 import tkinter as tk
 import subprocess
 import sys
 from pathlib import Path
 from tkinter import messagebox, ttk
 
-from arcade.agents import DQNPolicy, RandomAgent, train_agent
+from arcade.agents import DQNPolicy, RandomAgent
 from arcade.environments import ENVIRONMENTS
 from arcade.resources import resource_path
 
@@ -35,7 +34,6 @@ class RLArcade(tk.Tk):
         self.agent_name = tk.StringVar(value="Trained DQN")
         self.speed = tk.IntVar(value=2)
         self.paused = False
-        self.training = False
         self.episode_rewards = []
         self.current_reward = 0.0
         self.last_action = "—"
@@ -58,8 +56,6 @@ class RLArcade(tk.Tk):
         style.configure("Metric.TLabel", background=COLORS["panel"], foreground=COLORS["accent"], font=("Segoe UI Semibold", 18))
         style.configure("TButton", font=("Segoe UI Semibold", 10), padding=(12, 8), background=COLORS["panel_light"], foreground=COLORS["text"])
         style.map("TButton", background=[("active", "#35465b")])
-        style.configure("Accent.TButton", background=COLORS["accent"], foreground="#102119")
-        style.map("Accent.TButton", background=[("active", "#75ebba")])
         style.configure("TCombobox", fieldbackground=COLORS["panel_light"], foreground=COLORS["text"], padding=6)
 
     def _build_ui(self):
@@ -81,7 +77,6 @@ class RLArcade(tk.Tk):
         ttk.Button(controls, text="Restart", command=self.restart).pack(side="left", padx=4)
         self.pause_button = ttk.Button(controls, text="Pause", command=self.toggle_pause)
         self.pause_button.pack(side="left", padx=4)
-        ttk.Button(controls, text="Train 1,000 episodes", style="Accent.TButton", command=self.start_training).pack(side="right", padx=4)
         ttk.Button(controls, text="Launch MuJoCo Biped", command=self.launch_biped).pack(side="right", padx=4)
 
         content = ttk.Frame(self)
@@ -125,7 +120,7 @@ class RLArcade(tk.Tk):
                 self.status.set("Loaded the trained Dueling Double DQN policy.")
             else:
                 self.agent = RandomAgent(len(self.env.action_names), seed=11)
-                self.status.set("No DQN checkpoint yet. Click Train 1,000 episodes.")
+                self.status.set("The trained DQN checkpoint is missing.")
         self.restart()
 
     def restart(self):
@@ -141,7 +136,7 @@ class RLArcade(tk.Tk):
         self.pause_button.configure(text="Resume" if self.paused else "Pause")
 
     def tick(self):
-        if not self.paused and not self.training and self.env and self.agent:
+        if not self.paused and self.env and self.agent:
             for _ in range(self.speed.get()):
                 action = self.agent.select_action(self.state)
                 self.last_action = self.env.action_names[action]
@@ -217,31 +212,6 @@ class RLArcade(tk.Tk):
         else:
             self.chart.create_oval(points[0] - 2, points[1] - 2, points[0] + 2, points[1] + 2, fill=COLORS["accent"], outline="")
 
-    def start_training(self):
-        if self.training:
-            return
-        self.training = True
-        self.paused = True
-        self.pause_button.configure(text="Resume", state="disabled")
-        name = self.environment_name.get()
-        self.status.set(f"Training {name}…")
-
-        decay = 0.999 if name == "Flappy Bird" else 0.995
-
-        def progress(done, total, average, epsilon):
-            self.after(0, lambda: self.status.set(f"Training {done:,}/{total:,} · score {average:.2f} · ε {epsilon:.3f}"))
-
-        def work():
-            try:
-                trained, scores, _epsilon = train_agent(
-                    ENVIRONMENTS[name], 1000, progress=progress, epsilon_decay=decay
-                )
-                self.after(0, lambda: self._finish_training(name, trained, scores))
-            except Exception as error:
-                self.after(0, lambda: self._training_failed(error))
-
-        threading.Thread(target=work, daemon=True).start()
-
     def launch_biped(self):
         if getattr(sys, "frozen", False):
             candidate = Path(sys.executable).with_name("BipedDemo.exe")
@@ -261,25 +231,6 @@ class RLArcade(tk.Tk):
             self.status.set("Launched the optional MuJoCo biped demo.")
         except OSError as error:
             messagebox.showerror("Could not launch biped", str(error))
-
-    def _finish_training(self, name, trained, scores):
-        if name == self.environment_name.get():
-            self.agent = trained
-            self.agent_name.set("Trained DQN")
-            self.episode_rewards = scores[-20:]
-            self.restart()
-        self.training = False
-        self.paused = False
-        self.pause_button.configure(text="Pause", state="normal")
-        self.status.set("Training complete · using the newly trained DQN.")
-
-    def _training_failed(self, error):
-        self.training = False
-        self.paused = False
-        self.pause_button.configure(text="Pause", state="normal")
-        messagebox.showerror("Training failed", str(error))
-        self.status.set("Training failed.")
-
 
 if __name__ == "__main__":
     RLArcade().mainloop()
