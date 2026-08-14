@@ -2,7 +2,10 @@ import random
 import torch
 from torch import nn
 from torch import optim
-from agent.network import Network
+try:
+  from .network import Network
+except ImportError:  # Preserve direct execution from the value directory.
+  from agent.network import Network
 
 class Agent:
   def __init__(self, state_size, action_size):
@@ -16,10 +19,6 @@ class Agent:
   def select_action(self, epsilon, state, action_size):
     self.steps += 1
     r = random.random()
-    if self.steps % 1000 == 0:
-      state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
-      output = self.training_network(state_tensor)
-      print(f"state: {state}, Q-values: {output}")
     if(r < epsilon):
       action = random.randint(0, action_size - 1)
       return action
@@ -59,4 +58,3 @@ class Agent:
         
     return td_errors
 
-    

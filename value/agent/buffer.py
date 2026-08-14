@@ -1,5 +1,8 @@
 from collections import deque
-from agent.sumtree import SumTree
+try:
+  from .sumtree import SumTree
+except ImportError:  # Preserve direct execution from the value directory.
+  from agent.sumtree import SumTree
 import random
 
 class Buffer:
@@ -10,7 +13,6 @@ class Buffer:
     self.beta_increment = beta_increment
     self.epsilon = epsilon
     self.max_priority = 1
-    print(self.memory.size)
   def add_entry(self, s_t, a_t, r_t, s_t1, done):
     priority = self.max_priority ** self.alpha
     self.memory.add(priority, (s_t, a_t, r_t, s_t1, done))
