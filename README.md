@@ -35,7 +35,7 @@ Flappy Bird and Snake provided a way to explore value-based learning in environm
 
 The precompiled demo supports 64-bit Windows 10 and Windows 11. Reviewers do not need Python, Docker, a virtual environment, or an internet connection.
 
-1. Download the release ZIP and extract it to a normal folder.
+1. Download the release ZIP `RLArcade-Windows.zip` and extract it to a normal folder.
 2. Confirm that `RLArcade.exe` and `BipedDemo.exe` are in the same folder.
 3. Double-click `RLArcade.exe`.
 4. If Windows SmartScreen appears, select **More info**, then **Run anyway**. The executable is unsigned, so Windows may display this warning.
