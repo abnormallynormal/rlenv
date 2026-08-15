@@ -1,97 +1,52 @@
-"""Standalone live viewer for the trained MuJoCo PPO biped."""
-
-import math
-import argparse
-import time
+"""Train or watch the project's original MuJoCo PPO biped."""
+import argparse, time
+from pathlib import Path
 
 import mujoco
 import mujoco.viewer
-import numpy as np
 import torch
-from torch import nn
 
 from arcade.resources import resource_path
+from policy.agent import Agent
+from policy.environment import Environment
 
 
-class Actor(nn.Module):
-    def __init__(self, state_size=16, action_dim=6):
-        super().__init__()
-        self.hidden_1 = nn.Linear(state_size, 64)
-        self.hidden_2 = nn.Linear(64, 64)
-        self.distributions = nn.Linear(64, action_dim * 2)
-
-    def forward(self, inputs):
-        values = torch.tanh(self.hidden_1(inputs))
-        values = torch.tanh(self.hidden_2(values))
-        means, log_stds = self.distributions(values).chunk(2, dim=-1)
-        return means, torch.clamp(log_stds, -20, 2)
+def load(agent, checkpoint, modified=0.):
+    try:
+        stamp = checkpoint.stat().st_mtime
+        if stamp != modified:
+            agent.load(checkpoint)
+            if agent.observations > 0: return stamp
+    except (OSError, RuntimeError, EOFError, ValueError, ZeroDivisionError): pass
+    return modified
 
 
-def observation(data):
-    positions = data.qpos
-    velocities = data.qvel
-    return np.concatenate(
-        [
-            positions[3:9],
-            velocities[3:9],
-            [positions[1], velocities[1], data.xpos[1][2], velocities[0]],
-        ]
-    )
-
-
-def reset(model, data):
-    mujoco.mj_resetData(model, data)
-    mujoco.mj_forward(model, data)
-    return observation(data)
+def watch(checkpoint, smoke=False):
+    env = Environment(str(resource_path("policy","robot.xml")),.95,max_steps=2000)
+    agent = Agent(state_size=16,action_dim=6,env=env); modified = load(agent,checkpoint)
+    if agent.observations <= 0:
+        checkpoint=resource_path("agent_checkpoint.pt"); modified=load(agent,checkpoint)
+    if agent.observations <= 0: raise RuntimeError("No initialized PPO checkpoint is available.")
+    state = env.reset()
+    if smoke:
+        for _ in range(25):
+            with torch.no_grad(): action,_ = agent.actor(torch.tensor(agent.normalize(state),dtype=torch.float32))
+            state,*_ = env.step(action.numpy())
+        print("MuJoCo smoke test passed"); return
+    with mujoco.viewer.launch_passive(env.model,env.data) as viewer:
+        while viewer.is_running():
+            started=time.perf_counter()
+            with torch.no_grad(): action,_ = agent.actor(torch.tensor(agent.normalize(state),dtype=torch.float32))
+            state,_reward,done,_terminated,_ = env.step(action.numpy()); viewer.sync()
+            if done: state=env.reset(); modified=load(agent,checkpoint,modified)
+            time.sleep(max(0.,env.model.opt.timestep-(time.perf_counter()-started)))
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--smoke-test", action="store_true", help="load assets and step without opening a viewer")
-    args = parser.parse_args()
-    xml_path = resource_path("policy", "robot.xml")
-    checkpoint_path = resource_path("agent_checkpoint.pt")
-    model = mujoco.MjModel.from_xml_path(str(xml_path))
-    data = mujoco.MjData(model)
-
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    actor = Actor()
-    actor.load_state_dict(checkpoint["actor"])
-    actor.eval()
-    mean = np.asarray(checkpoint["mean"], dtype=np.float32)
-    count = max(1, int(checkpoint["observations"]))
-    variance_sum = np.asarray(checkpoint["sum_of_sd"], dtype=np.float32)
-    deviation = np.sqrt(variance_sum / count + 1e-8)
-
-    state = reset(model, data)
-    if args.smoke_test:
-        for _ in range(25):
-            normalized = (state - mean) / deviation
-            with torch.no_grad():
-                action, _log_std = actor(torch.as_tensor(normalized, dtype=torch.float32))
-            data.ctrl[:] = action.numpy()
-            mujoco.mj_step(model, data)
-            state = observation(data)
-        print(f"MuJoCo smoke test passed: observation={state.shape}, controls={model.nu}")
-        return
-
-    with mujoco.viewer.launch_passive(model, data) as viewer:
-        while viewer.is_running():
-            started = time.perf_counter()
-            normalized = (state - mean) / deviation
-            with torch.no_grad():
-                action, _log_std = actor(torch.as_tensor(normalized, dtype=torch.float32))
-            data.ctrl[:] = action.numpy()
-            mujoco.mj_step(model, data)
-            state = observation(data)
-            fallen = state[14] < 0.6 or abs(state[12]) > 0.8
-            if fallen:
-                state = reset(model, data)
-            viewer.sync()
-            delay = model.opt.timestep - (time.perf_counter() - started)
-            if delay > 0:
-                time.sleep(delay)
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--checkpoint",type=Path,default=resource_path("agent_checkpoint.pt"))
+    parser.add_argument("--smoke-test",action="store_true")
+    args=parser.parse_args(); watch(args.checkpoint.resolve(),args.smoke_test)
 
 
-if __name__ == "__main__":
-    main()
+if __name__=="__main__": main()

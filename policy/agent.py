@@ -1,5 +1,9 @@
-from actor import Actor
-from critic import Critic
+try:
+  from .actor import Actor
+  from .critic import Critic
+except ImportError:
+  from actor import Actor
+  from critic import Critic
 from torch import nn
 from torch import optim
 import random
@@ -30,8 +34,9 @@ class Agent():
       self.sum_of_sd[i] += delta * float((next_state[i] - self.mean[i]))
   def normalize(self, state):
     normalized = [0] * 16
+    count = max(1, self.observations)
     for i in range(16):
-        normalized[i] = (state[i] - self.mean[i]) / math.sqrt(self.sum_of_sd[i] / self.observations + 1e-8)
+        normalized[i] = (state[i] - self.mean[i]) / math.sqrt(self.sum_of_sd[i] / count + 1e-8)
     return normalized
   def train(self, iterations, gamma, LAMBDA, epsilon, c2):
     for iteration in range(iterations):
