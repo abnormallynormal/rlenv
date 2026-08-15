@@ -5,5 +5,7 @@ __pycache__/
 .biped-build-venv/
 build/
 dist/
+release/*.zip
+release/**/*.exe
 *.tmp
 models/.*-training.pt
