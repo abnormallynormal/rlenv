@@ -28,6 +28,8 @@ Flappy Bird and Snake are simple, intuitive games that provide a way to explore 
 
 Overall, this project taught me a lot about the logic and theory behind reinforcement learning, and really made me think critically about all the factors that could influence an agent's behavior and success.
 
+AI note: AI was simply used to package all the Pygame/MuJoCo environments and backend training into a shippable product (took 3-4 hours max). None of the preexisting environments, training algorithms, or graphics were built using AI.
+
 ## How to use/install
 
 The demo supports 64-bit Windows 10 and Windows 11. Users do not need Python, Docker, a virtual environment, or an internet connection.
